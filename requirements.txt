@@ -6,4 +6,4 @@ pandas>=1.4.0
 requests>=2.31.0
 aiohttp>=3.8.0
 tqdm>=4.65.0
-python-docx>=0.8.11
+llama-parse>=0.0.27
