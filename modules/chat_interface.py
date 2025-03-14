@@ -59,7 +59,7 @@ class ChatInterface:
         """Analyze user input to determine their intent"""
         try:
             response = openai.chat.completions.create(
-                model="gpt-4",
+                model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": """You are an intent classifier for a job search assistant.
                      Return a JSON object with these fields:
