@@ -1,6 +1,7 @@
 import streamlit as st
 import os
 from dotenv import load_dotenv
+import openai
 from modules.resume_parser import ResumeParser
 from modules.job_search import JobSearcher
 from modules.company_research import CompanyResearcher
@@ -9,6 +10,9 @@ from modules.chat_interface import ChatInterface
 
 # Load environment variables
 load_dotenv()
+openai.api_key = os.getenv("OPENAI_API_KEY")
+if not openai.api_key:
+    raise ValueError("OpenAI API key not found in environment variables")
 
 class AIRecruiterApp:
     def __init__(self):
@@ -44,6 +48,48 @@ class AIRecruiterApp:
             st.error(f"Error processing file: {str(e)}")
             return None
 
+    def generate_welcome_message(self, resume_data):
+        """Generate a personalized welcome message based on resume analysis"""
+        try:
+            current_company = None
+            suitable_roles = []
+            
+            # Extract current company from most recent experience
+            if resume_data.get('experience'):
+                most_recent = resume_data['experience'][0]
+                # Look for company name in the most recent experience
+                companies = [word for word in most_recent.split() if word.isupper() and len(word) > 1]
+                if companies:
+                    current_company = companies[0]
+            
+            # Analyze skills to suggest suitable roles
+            skills = resume_data.get('skills', [])
+            if skills:
+                response = openai.chat.completions.create(
+                    model="gpt-4",
+                    messages=[
+                        {"role": "system", "content": "You are a career advisor. Based on the skills provided, suggest 2-3 most suitable job roles. Return them as a comma-separated list."},
+                        {"role": "user", "content": f"Skills: {', '.join(skills)}"}
+                    ],
+                    temperature=0.7
+                )
+                suitable_roles = [role.strip() for role in response.choices[0].message.content.split(',')]
+            
+            # Construct welcome message
+            welcome_msg = "👋 Welcome! Based on your resume, "
+            if current_company:
+                welcome_msg += f"I see you're currently at {current_company}. "
+            
+            if suitable_roles:
+                welcome_msg += f"Your skills make you a strong candidate for roles like {', '.join(suitable_roles)}. "
+            
+            welcome_msg += "\nHow can I help you with your job search today?"
+            
+            return welcome_msg
+        except Exception as e:
+            print(f"Error generating welcome message: {str(e)}")
+            return "👋 Welcome! I've analyzed your resume. How can I help you with your job search today?"
+
     def main(self):
         st.title("My Helpful AI Recruiter")
         
@@ -61,6 +107,8 @@ class AIRecruiterApp:
                     parsed_data = self.handle_file_upload(resume_file)
                     if parsed_data:
                         st.session_state.resume_data = parsed_data
+                        welcome_message = self.generate_welcome_message(parsed_data)
+                        st.session_state.messages = [{"role": "assistant", "content": welcome_message}]
                         st.success("Resume analyzed successfully!")
 
             # Job search filters
