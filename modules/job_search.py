@@ -19,7 +19,7 @@ class JobSearcher:
         try:
             # Use OpenAI to get job recommendations
             response = openai.chat.completions.create(
-                model="gpt-4",  # Using standard GPT-4 model
+                model="gpt-4o-search-preview",  # Using standard GPT-4 model
                 messages=[
                     {"role": "system", "content": "You are a job search assistant. Search for relevant jobs based on the candidate's profile and return exactly 3 most relevant positions from the last 24 hours."},
                     {"role": "user", "content": query}
